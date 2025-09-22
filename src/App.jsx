@@ -1,11 +1,20 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
 export default function App() {
   const [rows, setRows] = useState(2);
   const [cols, setCols] = useState(2);
-  const pieceSize = 100;
+  const [pieces, setPieces] = useState([]);
+  const [draggedIndex, setDraggedIndex] = useState(null);
+  const [selectedIndex, setSelectedIndex] = useState(null);
+  const [imageError, setImageError] = useState(false);
+  const containerRef = useRef(null);
+  const [containerWidth, setContainerWidth] = useState(0);
+
   const imageUrl =
     "https://pm1.aminoapps.com/8062/75c43124267d9dc4a0be3e37648406cda1add0edr1-859-393v2_hq.jpg";
+
+  // Calcula el tamaño de cada pieza según el ancho del contenedor
+  const pieceSize = containerWidth / cols - 6; // 6px gap
 
   const createInitial = (r, c) => Array.from({ length: r * c }, (_, i) => i);
 
@@ -18,14 +27,21 @@ export default function App() {
     return a;
   };
 
-  const [pieces, setPieces] = useState(() => shuffle(createInitial(rows, cols)));
-  const [draggedIndex, setDraggedIndex] = useState(null);
-  const [selectedIndex, setSelectedIndex] = useState(null);
-  const [imageError, setImageError] = useState(false);
-
   useEffect(() => {
     setPieces(shuffle(createInitial(rows, cols)));
   }, [rows, cols]);
+
+  // Actualiza el ancho del contenedor al montar y al redimensionar
+  useEffect(() => {
+    const updateWidth = () => {
+      if (containerRef.current) {
+        setContainerWidth(containerRef.current.offsetWidth);
+      }
+    };
+    updateWidth();
+    window.addEventListener("resize", updateWidth);
+    return () => window.removeEventListener("resize", updateWidth);
+  }, [cols]);
 
   const handleDragStart = (e, index) => {
     e.dataTransfer.setData("text/plain", String(index));
@@ -124,6 +140,7 @@ export default function App() {
 
         {/* Puzzle */}
         <div
+          ref={containerRef}
           style={{
             display: "grid",
             gridTemplateColumns: `repeat(${cols}, ${pieceSize}px)`,
